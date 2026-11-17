@@ -50,3 +50,11 @@ artifact only. To build locally: `gradle assembleRelease` (Gradle 8.11, JDK 17, 
 `KEYSTORE_FILE` and `KEYSTORE_PASSWORD` to sign with your own key.
 
 The app icon is a simple placeholder.
+
+## License
+
+Copyright (C) 2026 DubMonstaa
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General
+Public License as published by the Free Software Foundation, either version 3 of the License, or (at your
+option) any later version. See [LICENSE](LICENSE). This is the same license as Voyager UI.
