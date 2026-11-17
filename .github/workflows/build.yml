@@ -1,0 +1,72 @@
+name: Voyager Panel (Android app)
+
+# Builds the Android wrapper app for Voyager UI and publishes the signed APK as a release.
+# The signing key comes from two repository secrets (Settings > Secrets and variables > Actions):
+#   VOYAGER_PANEL_KEYSTORE           the keystore (.jks), base64
+#   VOYAGER_PANEL_KEYSTORE_PASSWORD  its password (store and key)
+# Without them (a fork, a pull request) the APK is built with the debug key and only kept as an artifact.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: voyager-panel-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Build the APK
+        env:
+          KEYSTORE_B64: ${{ secrets.VOYAGER_PANEL_KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.VOYAGER_PANEL_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/voyagerpanel.jks"
+            export KEYSTORE_FILE="$RUNNER_TEMP/voyagerpanel.jks"
+            echo "SIGNED=1" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No signing secrets: building with the debug key, no release"
+          fi
+          gradle --no-daemon assembleRelease
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          VERSION="1.0.$((GITHUB_RUN_NUMBER + 7))"
+          cp "$APK" "$GITHUB_WORKSPACE/VoyagerPanel-${VERSION}.apk"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Check the signature
+        if: env.SIGNED == '1'
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs "VoyagerPanel-${VERSION}.apk" | head -3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VoyagerPanel-${{ env.VERSION }}
+          path: VoyagerPanel-*.apk
+
+      - name: Publish release
+        if: env.SIGNED == '1' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "voyager-panel-${VERSION}" "VoyagerPanel-${VERSION}.apk" \
+            --title "Voyager Panel ${VERSION} (Android)" \
+            --notes "Android app that shows Voyager UI full screen. Install the APK on the tablet; new versions install over the old one."

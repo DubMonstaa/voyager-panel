@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+}
+
+// +7: versions continue from the builds of the earlier, private repository (up to 1.0.7)
+def runNumber = ((System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int) + 7
+def ksFile = System.getenv('KEYSTORE_FILE')
+
+android {
+    namespace 'ro.dub.voyagerpanel'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'ro.dub.voyagerpanel'
+        minSdk 26
+        targetSdk 35
+        versionCode runNumber
+        versionName "1.0.${runNumber}"
+    }
+
+    signingConfigs {
+        release {
+            if (ksFile) {
+                storeFile file(ksFile)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias 'voyagerpanel'
+                keyPassword System.getenv('KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ksFile ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
