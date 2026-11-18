@@ -40,6 +40,10 @@
   .toggle span { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s; }
   .toggle.on { background: var(--on); }
   .toggle.on span { left: 23px; }
+  /* segmented choice, as in Voyager */
+  .seg { display: flex; flex: none; background: var(--s2); border-radius: 9px; padding: 3px; gap: 2px; }
+  .seg button { border: 0; background: none; color: var(--mu); font: 600 12.5px var(--fd); padding: 7px 11px; border-radius: 7px; cursor: pointer; }
+  .seg button.on { background: var(--s3); color: var(--tx, #fff); }
   /* buttons and fields */
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 14px; border: 0; border-radius: 9px;
     background: var(--s2); color: var(--tx); font: 600 13px var(--fd); cursor: pointer; white-space: nowrap; }
@@ -121,6 +125,7 @@
       <div class="rw"><div class="k"><b>Full screen</b><span>Hide the status and navigation bars</span></div><button class="toggle" data-k="fullscreen"><span></span></button></div>
       <div class="rw"><div class="k"><b>Keep the screen on</b></div><button class="toggle" data-k="keepOn"><span></span></button></div>
       <div class="rw"><div class="k"><b>Landscape only</b></div><button class="toggle" data-k="landscape"><span></span></button></div>
+      <div class="rw"><div class="k"><b>Drawing</b><span>If graphs show stray coloured specks, try Layer, then Software (slowest)</span></div><div class="seg" id="rendering"><button data-v="normal">Normal</button><button data-v="layer">Layer</button><button data-v="software">Software</button></div></div>
       <p class="note" style="margin: 4px 0 16px">In the app, the Back button goes back inside Voyager. With nothing to go back to, it opens a menu with All printers, Open another printer, Reload, Settings and Exit.</p>
     </section>
   </main>
@@ -241,13 +246,19 @@
     t.onclick = () => set(!t.classList.contains('on'));
   });
 
+  let rendering = st.rendering || 'normal';
+  const segs = $('rendering').querySelectorAll('button');
+  const showRendering = () => segs.forEach((b) => b.classList.toggle('on', b.dataset.v === rendering));
+  segs.forEach((b) => (b.onclick = () => { rendering = b.dataset.v; showRendering(); }));
+  showRendering();
+
   $('saveBtn').onclick = () => {
     if ($('addr').value.trim()) add();
     if (!urls.length) {
       $('saveMsg').textContent = 'Add at least one printer.';
       return;
     }
-    const out = { urls };
+    const out = { urls, rendering };
     document.querySelectorAll('.toggle').forEach((t) => (out[t.dataset.k] = t.classList.contains('on')));
     P.save(JSON.stringify(out));
   };

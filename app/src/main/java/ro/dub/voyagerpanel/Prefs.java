@@ -57,6 +57,16 @@ final class Prefs {
         return sp.getBoolean("auto_switch", true);
     }
 
+    /**
+     * How the page is drawn: "normal" (the WebView's own GPU drawing), "layer" (into a hardware layer first, which
+     * avoids stray coloured specks some tablet GPUs leave on graphs) or "software" (by the CPU: slowest, always
+     * clean).
+     */
+    String rendering() {
+        String r = sp.getString("rendering", "normal");
+        return "layer".equals(r) || "software".equals(r) ? r : "normal";
+    }
+
     /** Open Voyager's "All printers" page at start instead of the dashboard. */
     boolean startOnPrinters() {
         return sp.getBoolean("start_printers", true);
@@ -68,7 +78,7 @@ final class Prefs {
     }
 
     void save(String urls, boolean fullscreen, boolean keepOn, boolean landscape, boolean startOnPrinters,
-              boolean autoSwitch) {
+              boolean autoSwitch, String rendering) {
         List<String> list = new ArrayList<>();
         for (String line : (urls == null ? "" : urls).split("[\\n,; ]+")) {
             String u = normalizeUrl(line);
@@ -82,6 +92,7 @@ final class Prefs {
                 .putBoolean("keep_on", keepOn)
                 .putBoolean("landscape", landscape)
                 .putBoolean("auto_switch", autoSwitch)
+                .putString("rendering", rendering == null ? "normal" : rendering)
                 .apply();
     }
 

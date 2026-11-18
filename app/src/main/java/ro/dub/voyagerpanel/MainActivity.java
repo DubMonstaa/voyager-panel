@@ -427,6 +427,14 @@ public class MainActivity extends Activity {
                 ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                 : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         applyFullscreen();
+        applyRendering();
+    }
+
+    private void applyRendering() {
+        if (web == null) return;
+        String r = prefs.rendering();
+        web.setLayerType("software".equals(r) ? View.LAYER_TYPE_SOFTWARE
+                : "layer".equals(r) ? View.LAYER_TYPE_HARDWARE : View.LAYER_TYPE_NONE, null);
     }
 
     @SuppressWarnings("deprecation")
