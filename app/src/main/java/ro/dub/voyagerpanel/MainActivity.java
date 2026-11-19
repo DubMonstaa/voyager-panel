@@ -85,6 +85,7 @@ public class MainActivity extends Activity {
      * those, so this script, run on every page, hands such a file to {@link Saver} (name, type, base64 content).
      * createObjectURL is wrapped so the file is still at hand when the page frees its address right after the click.
      */
+    private String deviceJs; // see deviceScript()
     private static final String DOWNLOAD_HOOK = "(function(){if(window.__panelDl||!window.PanelDl)return;window.__panelDl=1;"
             + "var blobs=new Map(),oc=URL.createObjectURL,orv=URL.revokeObjectURL;"
             + "URL.createObjectURL=function(o){var u=oc.call(URL,o);if(o instanceof Blob)blobs.set(u,o);return u;};"
@@ -99,6 +100,40 @@ public class MainActivity extends Activity {
             + "HTMLAnchorElement.prototype.click=function(){if(inPage(this)){grab(this);return;}return click.call(this);};"
             + "document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[download]');"
             + "if(inPage(a)){e.preventDefault();grab(a);}},true);})();";
+
+    /**
+     * Voyager gives every browser its own dashboard layout, under an id kept in the page's local storage. That
+     * storage is per address (each printer's page has its own) and is wiped with the app, so the tablet was a new
+     * device on every printer and after every reinstall. The app hands Voyager one id instead, from the tablet's
+     * Android ID (the same for every printer, and kept across reinstalls). The first time, the layout the page
+     * had under its old id is copied to the new one on that printer, then the page reloads once.
+     */
+    private String deviceScript() {
+        String aid = android.provider.Settings.Secure.getString(getContentResolver(),
+                android.provider.Settings.Secure.ANDROID_ID);
+        if (aid == null || aid.isEmpty()) return null;
+        String id = "panel-" + aid.replaceAll("[^A-Za-z0-9_-]", "");
+        String name = (Build.MODEL == null || Build.MODEL.isEmpty() ? "Tablet" : Build.MODEL) + " (Voyager Panel)";
+        // fin: false while the page starts (only hand over the id), true once it has loaded (copy the old layout,
+        // then reload once so Voyager runs with the new id)
+        return "(function(fin){try{if(!/^https?:/.test(location.protocol))return;"
+                + "var K='voyager-ui-device-layout',ID=" + org.json.JSONObject.quote(id) + ",NM=" + org.json.JSONObject.quote(name) + ";"
+                + "var o=null;try{o=JSON.parse(localStorage.getItem(K)||'null')}catch(e){}"
+                + "if(!o||o.id!==ID){if(o&&o.id&&!sessionStorage.getItem('panel-old-id'))sessionStorage.setItem('panel-old-id',o.id);"
+                + "localStorage.setItem(K,JSON.stringify({id:ID,name:NM}));sessionStorage.setItem('panel-dev-new','1')}"
+                + "if(!fin||!sessionStorage.getItem('panel-dev-new'))return;sessionStorage.removeItem('panel-dev-new');"
+                + "var old=sessionStorage.getItem('panel-old-id'),tok='';sessionStorage.removeItem('panel-old-id');"
+                + "try{tok=(JSON.parse(localStorage.getItem('voyager-ui-auth')||'{}').token)||''}catch(e){}"
+                + "var h=tok?{Authorization:'Bearer '+tok}:{},NS='voyager-ui-layouts';"
+                + "var it=function(k){return fetch('/server/database/item?namespace='+NS+'&key='+encodeURIComponent(k),{headers:h,cache:'no-store'})"
+                + ".then(function(r){return r.ok?r.json():null}).then(function(j){return j&&j.result&&j.result.value})};"
+                + "var done=function(){location.reload()};"
+                + "if(!old||!/^[A-Za-z0-9_-]+$/.test(old))return done();"
+                + "Promise.all([it(old),it(ID)]).then(function(v){if(!v[0]||!v[0].data||v[1])return;"
+                + "return fetch('/server/database/item',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},h),"
+                + "body:JSON.stringify({namespace:NS,key:ID,value:{name:NM,t:Date.now(),data:v[0].data}})})})"
+                + ".catch(function(){}).then(done,done)}catch(e){}})";
+    }
 
     /** Saves files handed over by {@link #DOWNLOAD_HOOK} to the Downloads folder. */
     private final class Saver {
@@ -278,6 +313,7 @@ public class MainActivity extends Activity {
         CookieManager.getInstance().setAcceptThirdPartyCookies(w, true);
         w.setBackgroundColor(Color.rgb(16, 20, 24));
 
+        deviceJs = deviceScript();
         w.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -294,11 +330,14 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 mainFrameError = false;
+                // usually early enough for Voyager to start with the app's device id; onPageFinished catches the rest
+                if (deviceJs != null) view.evaluateJavascript(deviceJs + "(false)", null);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 view.evaluateJavascript(DOWNLOAD_HOOK, null);
+                if (deviceJs != null) view.evaluateJavascript(deviceJs + "(true)", null);
                 if (!mainFrameError) showOffline(false);
             }
 
