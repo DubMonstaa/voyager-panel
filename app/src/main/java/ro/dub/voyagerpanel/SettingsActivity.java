@@ -63,6 +63,7 @@ public class SettingsActivity extends Activity {
                 o.put("startPrinters", prefs.startOnPrinters());
                 o.put("autoSwitch", prefs.autoSwitch());
                 o.put("rendering", prefs.rendering());
+                o.put("graphFix", prefs.graphFix());
                 o.put("fullscreen", prefs.fullscreen());
                 o.put("keepOn", prefs.keepScreenOn());
                 o.put("landscape", prefs.landscape());
@@ -108,7 +109,8 @@ public class SettingsActivity extends Activity {
                 for (int i = 0; i < a.length(); i++) b.append(a.getString(i)).append('\n');
                 prefs.save(b.toString(), o.optBoolean("fullscreen", true), o.optBoolean("keepOn", true),
                         o.optBoolean("landscape", true), o.optBoolean("startPrinters", true),
-                        o.optBoolean("autoSwitch", true), o.optString("rendering", "normal"));
+                        o.optBoolean("autoSwitch", true), o.optString("rendering", "normal"),
+                        o.optString("graphFix", "off"));
             } catch (Exception ignored) {
             }
             runOnUiThread(() -> {

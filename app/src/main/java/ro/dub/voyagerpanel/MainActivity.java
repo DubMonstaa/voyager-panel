@@ -338,6 +338,7 @@ public class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 view.evaluateJavascript(DOWNLOAD_HOOK, null);
                 if (deviceJs != null) view.evaluateJavascript(deviceJs + "(true)", null);
+                view.evaluateJavascript(graphFixJs(), null);
                 if (!mainFrameError) showOffline(false);
             }
 
@@ -469,11 +470,23 @@ public class MainActivity extends Activity {
         applyRendering();
     }
 
+    /** Adds (or removes) the Graph fix style in the page; see {@link Prefs#graphFix()}. */
+    private String graphFixJs() {
+        String g = prefs.graphFix();
+        String css = "layer".equals(g) ? ".plot svg{will-change:transform;transform:translateZ(0)}"
+                : "sharp".equals(g) ? ".plot svg,.plot svg *{shape-rendering:crispEdges}"
+                : "box".equals(g) ? ".plot{contain:paint;isolation:isolate}.plot svg{contain:paint}" : "";
+        return "(function(){var s=document.getElementById('panel-graph-fix');"
+                + "if(!s){s=document.createElement('style');s.id='panel-graph-fix';(document.head||document.documentElement).appendChild(s)}"
+                + "s.textContent=" + org.json.JSONObject.quote(css) + "})()";
+    }
+
     private void applyRendering() {
         if (web == null) return;
         String r = prefs.rendering();
         web.setLayerType("software".equals(r) ? View.LAYER_TYPE_SOFTWARE
                 : "layer".equals(r) ? View.LAYER_TYPE_HARDWARE : View.LAYER_TYPE_NONE, null);
+        web.evaluateJavascript(graphFixJs(), null);
     }
 
     @SuppressWarnings("deprecation")

@@ -67,6 +67,16 @@ final class Prefs {
         return "layer".equals(r) || "software".equals(r) ? r : "normal";
     }
 
+    /**
+     * A drawing change for Voyager's temperature graph only, against the coloured specks some tablet GPUs leave
+     * on it: "off", "layer" (the graph on its own GPU layer), "sharp" (lines without anti-aliasing) or "box"
+     * (the graph painted in isolation).
+     */
+    String graphFix() {
+        String g = sp.getString("graph_fix", "off");
+        return "layer".equals(g) || "sharp".equals(g) || "box".equals(g) ? g : "off";
+    }
+
     /** Open Voyager's "All printers" page at start instead of the dashboard. */
     boolean startOnPrinters() {
         return sp.getBoolean("start_printers", true);
@@ -78,7 +88,7 @@ final class Prefs {
     }
 
     void save(String urls, boolean fullscreen, boolean keepOn, boolean landscape, boolean startOnPrinters,
-              boolean autoSwitch, String rendering) {
+              boolean autoSwitch, String rendering, String graphFix) {
         List<String> list = new ArrayList<>();
         for (String line : (urls == null ? "" : urls).split("[\\n,; ]+")) {
             String u = normalizeUrl(line);
@@ -93,6 +103,7 @@ final class Prefs {
                 .putBoolean("landscape", landscape)
                 .putBoolean("auto_switch", autoSwitch)
                 .putString("rendering", rendering == null ? "normal" : rendering)
+                .putString("graph_fix", graphFix == null ? "off" : graphFix)
                 .apply();
     }
 

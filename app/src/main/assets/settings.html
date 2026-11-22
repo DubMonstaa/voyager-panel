@@ -126,6 +126,7 @@
       <div class="rw"><div class="k"><b>Keep the screen on</b></div><button class="toggle" data-k="keepOn"><span></span></button></div>
       <div class="rw"><div class="k"><b>Landscape only</b></div><button class="toggle" data-k="landscape"><span></span></button></div>
       <div class="rw"><div class="k"><b>Drawing</b><span>If graphs show stray coloured specks, try Layer, then Software (slowest)</span></div><div class="seg" id="rendering"><button data-v="normal">Normal</button><button data-v="layer">Layer</button><button data-v="software">Software</button></div></div>
+      <div class="rw"><div class="k"><b>Graph fix (test)</b><span>Other ways to draw only the temperature graph, with Drawing on Normal. Keep the one without specks.</span></div><div class="seg" id="graphFix"><button data-v="off">Off</button><button data-v="layer">1</button><button data-v="sharp">2</button><button data-v="box">3</button></div></div>
       <p class="note" style="margin: 4px 0 16px">In the app, the Back button goes back inside Voyager. With nothing to go back to, it opens a menu with All printers, Open another printer, Reload, Settings and Exit.</p>
     </section>
   </main>
@@ -251,6 +252,11 @@
   const showRendering = () => segs.forEach((b) => b.classList.toggle('on', b.dataset.v === rendering));
   segs.forEach((b) => (b.onclick = () => { rendering = b.dataset.v; showRendering(); }));
   showRendering();
+  let graphFix = st.graphFix || 'off';
+  const gsegs = $('graphFix').querySelectorAll('button');
+  const showGraphFix = () => gsegs.forEach((b) => b.classList.toggle('on', b.dataset.v === graphFix));
+  gsegs.forEach((b) => (b.onclick = () => { graphFix = b.dataset.v; showGraphFix(); }));
+  showGraphFix();
 
   $('saveBtn').onclick = () => {
     if ($('addr').value.trim()) add();
@@ -258,7 +264,7 @@
       $('saveMsg').textContent = 'Add at least one printer.';
       return;
     }
-    const out = { urls, rendering };
+    const out = { urls, rendering, graphFix };
     document.querySelectorAll('.toggle').forEach((t) => (out[t.dataset.k] = t.classList.contains('on')));
     P.save(JSON.stringify(out));
   };
