@@ -110,7 +110,7 @@ public class SettingsActivity extends Activity {
                 prefs.save(b.toString(), o.optBoolean("fullscreen", true), o.optBoolean("keepOn", true),
                         o.optBoolean("landscape", true), o.optBoolean("startPrinters", true),
                         o.optBoolean("autoSwitch", true), o.optString("rendering", "normal"),
-                        o.optString("graphFix", "off"));
+                        o.optString("graphFix", "sharp"));
             } catch (Exception ignored) {
             }
             runOnUiThread(() -> {

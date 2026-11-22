@@ -473,9 +473,7 @@ public class MainActivity extends Activity {
     /** Adds (or removes) the Graph fix style in the page; see {@link Prefs#graphFix()}. */
     private String graphFixJs() {
         String g = prefs.graphFix();
-        String css = "layer".equals(g) ? ".plot svg{will-change:transform;transform:translateZ(0)}"
-                : "sharp".equals(g) ? ".plot svg,.plot svg *{shape-rendering:crispEdges}"
-                : "box".equals(g) ? ".plot{contain:paint;isolation:isolate}.plot svg{contain:paint}" : "";
+        String css = "sharp".equals(g) ? ".plot svg,.plot svg *{shape-rendering:crispEdges}" : "";
         return "(function(){var s=document.getElementById('panel-graph-fix');"
                 + "if(!s){s=document.createElement('style');s.id='panel-graph-fix';(document.head||document.documentElement).appendChild(s)}"
                 + "s.textContent=" + org.json.JSONObject.quote(css) + "})()";
